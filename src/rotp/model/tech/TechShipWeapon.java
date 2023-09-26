@@ -18,26 +18,30 @@ package rotp.model.tech;
 import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.GradientPaint;
 import java.awt.Graphics2D;
+import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.Stroke;
 import java.awt.geom.Line2D;
-import java.awt.image.BufferedImage;
+import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
 import rotp.model.combat.CombatStack;
+import rotp.model.combat.CombatStack.ShieldEffects;
 import rotp.model.empires.Empire;
 import rotp.model.ships.ShipComponent;
 import rotp.model.ships.ShipWeaponBeam;
 import rotp.ui.BasePanel;
 import rotp.ui.combat.ShipBattleUI;
+import rotp.util.BufferedImageList;
 
 public final class TechShipWeapon extends Tech {
 	private static int WIND_UP_FRAMES = 3;
-	private static int HOLD_FRAMES = 0;
+	private static int HOLD_FRAMES    = 0;
+	private static int CLOSE_FRAMES   = 0;
 	
     private int damageLow = 0;
     private int damageHigh = 0;
@@ -57,13 +61,15 @@ public final class TechShipWeapon extends Tech {
     // graphic effects
     public int weaponSpread = 1;
     public int windUpFrames = WIND_UP_FRAMES;
-    public int holdFrames = HOLD_FRAMES;
+    public int holdFrames   = HOLD_FRAMES;
+    public int closeFrames  = CLOSE_FRAMES;
 
     private int beamStroke, dashStroke;
     private transient Color beamColor;
     private transient Color beamColor2;
     private transient Color cycleColor;
     private transient Color cycleColor2;
+    private transient boolean showShield;
     private Stroke weaponStroke;
 
     public int damageLow()       { return (int) (session().damageBonus() * damageLow); }
@@ -448,42 +454,58 @@ public final class TechShipWeapon extends Tech {
         ShipBattleUI ui = source.mgr.ui;
         if (ui == null)
             return;
+        Rectangle sourceBox = ui.stackBox(source);
+        Rectangle targexBox = ui.stackBox(target);
 
-        int stW = ui.stackW();
-        int stH = ui.stackH();
-        int st0X = ui.stackX(source);
-        int st0Y = ui.stackY(source);
-        int st1X = ui.stackX(target);
-        int st1Y = ui.stackY(target);
+//        int boxW = ui.stackW();
+//        int boxH = ui.stackH();
+//        int st0X = ui.stackX(source);
+//        int st0Y = ui.stackY(source);
+//        int st1X = ui.stackX(target);
+//        int st1Y = ui.stackY(target);
 
-        int x0 = st0X > st1X ? st0X+(stW/3) :st0X+(stW*2/3);
-        int y0 = st0Y+stH/2;
-        int x1 = st1X+stW/2;
-        int y1 = st1Y+stH/2;
-        drawAttack(source, target, x0, y0, x1, y1, wpnNum, -1f, count, stW, stH, 0f);
+//        int x0 = st0X > st1X ? st0X+(boxW/3) :st0X+(boxW*2/3);
+//        int y0 = st0Y+boxH/2;
+//        int x1 = st1X+boxW/2;
+//        int y1 = st1Y+boxH/2;
+    	System.out.println("drawIneffectiveAttack sourceBox.x = " + sourceBox.x );
+   
+        Point2D offset = new Point2D.Float(0.5f, 0.5f);
+        drawAttack(source, target, sourceBox, targexBox, offset, wpnNum, -1f, count, 0f);
+//        drawAttack(source, target, x0, y0, x1, y1, wpnNum, -1f, count, boxW, boxH, 0f);
     }
     @Override  // Miss
     public void drawUnsuccessfulAttack(CombatStack source, CombatStack target, int wpnNum, int count) {
         ShipBattleUI ui = source.mgr.ui;
         if (ui == null)
             return;
+        Rectangle sourceBox = ui.stackBox(source);
+        Rectangle targexBox = ui.stackBox(target);
 
-        int stW = ui.stackW();
-        int stH = ui.stackH();
-        int st0X = ui.stackX(source);
-        int st0Y = ui.stackY(source);
-        int st1X = ui.stackX(target);
-        int st1Y = ui.stackY(target);
-
-        int xRoll = roll(0,2);
-        int xMiss = stW/4 + (xRoll *stW/4);
-        int yMiss = xRoll == 1 ? stH/4+roll(0,1) *stH/2 : stH/4+(roll(0,2) *stH/4);
-
-        int x0 = st0X > st1X ? st0X+(stW/3) :st0X+(stW*2/3);
-        int y0 = st0Y+stH/2;
-        int x1 = st1X+xMiss;
-        int y1 = st1Y+yMiss;
-        drawAttack(source, target, x0, y0, x1, y1, wpnNum, 0f, count, stW, stH, 0f);
+//        int boxW = ui.stackW();
+//        int boxH = ui.stackH();
+//        int st0X = ui.stackX(source);
+//        int st0Y = ui.stackY(source);
+//        int st1X = ui.stackX(target);
+//        int st1Y = ui.stackY(target);
+//
+//        int xRoll = roll(0,2);
+//        int xMiss = boxW/4 + (xRoll *boxW/4);
+//        int yMiss = xRoll == 1 ? boxH/4+roll(0,1) *boxH/2 : boxH/4+(roll(0,2) *boxH/4);
+//
+//        int x0 = st0X > st1X ? st0X+(boxW/3) :st0X+(boxW*2/3);
+//        int y0 = st0Y+boxH/2;
+//        int x1 = st1X+xMiss;
+//        int y1 = st1Y+yMiss;
+    	System.out.println("drawUnsuccessfulAttack sourceBox.x = " + sourceBox.x );
+        
+        int xRoll = roll(-1,1);
+        float xMiss = 1/2f + xRoll/4f;
+        float yMiss = xRoll == 0 ? 1/4f+roll(0,1)/2f : 1/2f+roll(-1,1)/4f;
+        
+        Point2D offset = new Point2D.Float(xMiss, yMiss);
+        drawAttack(source, target, sourceBox, targexBox, offset, wpnNum, 0f, count, 0f);
+//        drawAttack(source, target, x0, y0, x1, y1, wpnNum, 0f, count, stW, boxH, 0f);
     }
     @Override
     public void drawSuccessfulAttack(CombatStack source, CombatStack target, int wpnNum, float dmg, int count, float force) {
@@ -491,36 +513,57 @@ public final class TechShipWeapon extends Tech {
         if (ui == null)
             return;
 
-        int stW = ui.stackW();
-        int stH = ui.stackH();
-        int st0X = ui.stackX(source);
-        int st0Y = ui.stackY(source);
-        int st1X = ui.stackX(target);
-        int st1Y = ui.stackY(target);
+        Rectangle sourceBox = ui.stackBox(source);
+        Rectangle targexBox = ui.stackBox(target);
+        
+//        int boxW = sourceBox.width;
+//        int boxH = sourceBox.height;
+//        
+//        int st0X = ui.stackX(source);
+//        int st0Y = ui.stackY(source);
+//        int st1X = ui.stackX(target);
+//        int st1Y = ui.stackY(target);
+//
+//        int x0 = st0X > st1X ? st0X+(boxW/3) :st0X+(boxW*2/3);
+//        int y0 = st0Y+boxH/2;
+//        int x1 = st1X+boxW/2;
+//        int y1 = st1Y+boxH/2;
+    	System.out.println("drawSuccessfulAttack sourceBox.x = " + sourceBox.x );
 
-        int x0 = st0X > st1X ? st0X+(stW/3) :st0X+(stW*2/3);
-        int y0 = st0Y+stH/2;
-        int x1 = st1X+stW/2;
-        int y1 = st1Y+stH/2;
-        drawAttack(source, target, x0, y0, x1, y1, wpnNum, dmg, count, stW, stH, force);
+        Point2D offset = new Point2D.Float(0.5f, 0.5f);
+        drawAttack(source, target, sourceBox, targexBox, offset, wpnNum, dmg, count, force);
+        
+  //      drawAttack(source, target, x0, y0, x1, y1, wpnNum, dmg, count, boxW, boxH, force);
     }
-    private void drawAttack(CombatStack source, CombatStack target, int x0, int y0, int x1, int y1,
-    		int wpnNum, float dmg, int count, int boxW, int boxH, float force) {
+    private void drawAttack(CombatStack source, CombatStack target,
+    		Rectangle sourceBox,  Rectangle targetBox, Point2D offset,
+    		int wpnNum, float dmg, int count, float force) {
+//    }
+//    private void drawAttack(CombatStack source, CombatStack target, int x0, int y0, int x1, int y1,
+//    		int wpnNum, float dmg, int count, int boxW, int boxH, float force) {
         ShipBattleUI ui = source.mgr.ui;
         if (!source.mgr.showAnimations()) 
             return;
 
-       
+ 		int boxW = sourceBox.width;
+ 		int boxH = sourceBox.height;
+ 		int x0 = sourceBox.x + sourceBox.x > targetBox.x ? (boxW/3) : (boxW*2/3);
+        int y0 = sourceBox.y + boxH/2;
+        int x1 = targetBox.x + (int)(offset.getX()*boxW);
+        int y1 = targetBox.y + (int)(offset.getY()*boxW);
 
-        // BR: Add Shield effect
-        boolean showShield = options().newWeaponAnimation()
-        					&& (dmg != 0)
-        					&& (target.shieldLevel()>0);
-        
-        Dimension shieldSize = showShield? target.shieldSize(boxW, boxH) : new Dimension(boxW, boxH);
-        int xS = x1 - shieldSize.width/2;
-        int yS = y1 - shieldSize.height/2;
-       
+        showShield = options().newWeaponAnimation()
+        				&& (dmg != 0)
+        				&& (target.shieldLevel()>0);
+        if (showShield) {
+        	drawShieldedAttack(source, target, sourceBox, targetBox, offset, wpnNum, dmg, count, force);
+        	return;
+        }
+        	
+        windUpFrames = source.mgr.autoComplete ? 1 : WIND_UP_FRAMES;
+        holdFrames = source.mgr.autoComplete ? 0 : HOLD_FRAMES;        	
+        holdFrames = source.mgr.autoComplete ? 0 : CLOSE_FRAMES;        	
+
         ShipComponent wpn = source.weapon(wpnNum);
         int wpnCount = count / attacksPerRound / source.num;
         Graphics2D g = (Graphics2D) ui.getGraphics();
@@ -557,27 +600,16 @@ public final class TechShipWeapon extends Tech {
         else
             playAudioClip(soundEffect());
        
-        if (showShield) {
-            windUpFrames = WIND_UP_FRAMES;
-            holdFrames = HOLD_FRAMES;        	
-        } else {
-            windUpFrames = source.mgr.autoComplete ? 1 : WIND_UP_FRAMES;
-            holdFrames = source.mgr.autoComplete ? 0 : HOLD_FRAMES;        	
-        }
-        BufferedImage[][] shieldImg = new BufferedImage[attacksPerRound][windUpFrames];
-
         int sourceSize = 3;
         if (source.design() != null)
         	sourceSize = source.design().size();
+
         // Full Beam trajectory generation
+        //
         ArrayList<Line2D.Double> lines = new ArrayList<>();
         for(int i = 0; i < attacksPerRound; ++i) {
             int xAdj = scaled(roll(-4,4)*2);
             int yAdj = scaled(roll(-4,4)*2);
-            if (showShield) {
-            	shieldImg[i] = target.shieldImg(windUpFrames, attacksPerRound,
-            			shieldSize, x0, y0, x1, y1, xAdj, yAdj, beamColor, force, dmg);
-            }
             if (weaponSpread > 1) {
                 int xMod = (source.y == target.y) ? 0 : 1;
                 int yMod = (source.x == target.x) ? 0 : 1;
@@ -595,9 +627,11 @@ public final class TechShipWeapon extends Tech {
                 lines.addAll(addMultiLines(sourceSize, wpnCount, x0, y0, x1+xAdj, y1+yAdj));
             }
         }
-        // Beams Progression generation
+        
+        // Beam to the Impact Progression  Rendering
+        //
         SortedMap<Integer, ArrayList<Line2D.Double>> partLines = new TreeMap<>();
-        long sleepTime = 50; // Original = 50;
+        long  sleepTime = 50; // Original = 50;
         for(int i = 0; i < windUpFrames; ++i) {
             ArrayList<Line2D.Double> pl = new ArrayList<>();
             for(Line2D.Double line : lines) {
@@ -608,11 +642,13 @@ public final class TechShipWeapon extends Tech {
                 pl.add(new Line2D.Double(newX1, newY1, newX2, newY2));
             }
             partLines.put(i, pl);
-            paintLines(pl, g);
+           	paintLines(pl, g);
             sleep(sleepTime);
             //ui.paintAllImmediately();
         }
-        // Show Continuous
+
+    	// Beam Holding  Rendering
+        //
         for(int i = 0; i < holdFrames; i++) {
             if(beamColor2 != null) {
                 GradientPaint gp = new GradientPaint(x0+i*scaled(10),y0+i*scaled(10), beamColor,
@@ -631,22 +667,15 @@ public final class TechShipWeapon extends Tech {
             paintLines(partLines, g);
             sleep(sleepTime);
         }
-        // Show end of beam
+
+        // Beam end Rendering
+        //
         for(int i = 0; i < windUpFrames; ++i) {
             ui.paintCellsImmediately(source.x, target.x, source.y, target.y);
             partLines.get(i).clear();
             paintLines(partLines, g);
-            if (showShield) {
-    	    	//g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
-    	    	g.setComposite(AlphaComposite.SrcOver);
-            	for(int k = 0; k < attacksPerRound; k++) {
-            		g.drawImage(shieldImg[k][i], xS, yS, null);
-            	}
-    	    	g.setComposite(AlphaComposite.Src);
-            }
             sleep(sleepTime);
         }
-        
         ui.paintAllImmediately();
 
         String missLabel = dmg < 0 ? text("SHIP_COMBAT_DEFLECTED") : text("SHIP_COMBAT_MISS");
@@ -669,6 +698,27 @@ public final class TechShipWeapon extends Tech {
         }
         return lines;
     }
+    // For Beam To the impact
+    private void paintLines(ArrayList<Line2D.Double> lines, Graphics2D g) {
+        for(Line2D.Double line : lines) {
+            g.draw(line);
+        }
+    }
+//    private void paintLinesAndShield(ArrayList<Line2D.Double> lines, ArrayList<Line2D.Double> linesV, Graphics2D g) {
+//		System.out.println("paintLinesAndShield Beam to impact");
+//        for(Line2D.Double line : lines) {
+//            g.draw(line);
+//        }
+//        if (linesV.isEmpty())
+//        	return;
+//        AlphaComposite.getInstance(AlphaComposite.SRC_OVER , 0.1f);
+//		System.out.println("AlphaComposite.SRC_OVER , 0.1f");
+//        for(Line2D.Double line : linesV) {
+//            g.draw(line);
+//        }
+//        g.setComposite(AlphaComposite.Src);
+//    }
+    // For HoldFrame and Beam ending
     private void paintLines(SortedMap<Integer, ArrayList<Line2D.Double>> lines, Graphics2D g) {
         for(ArrayList<Line2D.Double> lineList : lines.values()) {
             for(Line2D.Double line : lineList) {
@@ -676,9 +726,291 @@ public final class TechShipWeapon extends Tech {
             }
         }
     }
-    private void paintLines(ArrayList<Line2D.Double> lines, Graphics2D g) {
-        for(Line2D.Double line : lines) {
-            g.draw(line);
+//    private void paintLinesAndShield(SortedMap<Integer, ArrayList<Line2D.Double>> lines, Graphics2D g) {
+//        for(ArrayList<Line2D.Double> lineList : lines.values()) {
+//            for(Line2D.Double line : lineList) {
+//                g.draw(line);
+//            }
+//        }
+//    }
+//    private void paintShields(BufferedImage[][]shieldImg, int first, int last, int xS, int yS, Graphics2D g) {
+//        if (showShield) {
+//	    	//g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
+//	    	g.setComposite(AlphaComposite.SrcOver);
+//        	for(int i = first; i < last; i++)
+//            	for(int k = 0; k < attacksPerRound; k++)
+//        		g.drawImage(shieldImg[k][i], xS, yS, null);
+//	    	g.setComposite(AlphaComposite.Src);
+//        }
+//    }
+
+    private void drawShieldedAttack(CombatStack source, CombatStack target,
+    		Rectangle sourceBox,  Rectangle targetBox, Point2D offset,
+    		int wpnNum, float dmg, int count, float force) {
+
+    	ShipBattleUI ui = source.mgr.ui;
+        if (!source.mgr.showAnimations()) 
+            return;
+
+//        holdFrames = source.mgr.autoComplete ? 0 : HOLD_FRAMES;        	
+//        holdFrames = source.mgr.autoComplete ? 0 : CLOSE_FRAMES;        	
+        windUpFrames = 5;
+        holdFrames   = 0;        	
+        closeFrames  = 0;        	
+
+        // = = = = = Shield Initialization = = = = =
+        //
+        ShieldEffects shieldEffects = target.new ShieldEffects();
+       	shieldEffects.setFramesNum(windUpFrames, holdFrames, closeFrames);
+       	int[] shieldPosArr = shieldEffects.setPositions(sourceBox, targetBox, offset);
+ 		int srcX = shieldPosArr[0];
+        int srcY = shieldPosArr[1];
+        int tarX = shieldPosArr[2];
+        int tarY = shieldPosArr[3];
+        int shieldX = shieldPosArr[4];
+        int shieldY = shieldPosArr[5];
+        
+        ShipComponent wpn = source.weapon(wpnNum);
+        int wpnCount = count / attacksPerRound / source.num;
+       
+        // = = = = = Graphic preparation = = = = =
+        //
+        Graphics2D g = (Graphics2D) ui.getGraphics();
+        Stroke prev = g.getStroke();
+
+        // Beam color preparation
+        int distFactor = 8*source.movePointsTo(target.x, target.y);
+        g.setColor(beamColor);
+        if(beamColor2 == null && cycleColor == null)
+        	beamColor2 = multColor(beamColor, 0.75f);
+        if(beamColor2 != null) {
+            GradientPaint gp = new GradientPaint(srcX, srcY, beamColor,
+            		srcX+(tarX-srcX)/distFactor, srcY+(tarY-srcY)/distFactor, beamColor2, true);
+            g.setPaint(gp);
         }
+
+        if ((dashStroke > 0) && (weaponStroke == null)) {
+            int w = scaled(3);
+            float dash = scaled(w*dashStroke);
+            weaponStroke = new BasicStroke(w, BasicStroke.CAP_ROUND, BasicStroke.JOIN_BEVEL, 0, new float[]{0, dash}, 0);
+        }
+
+        if (weaponStroke != null)
+            g.setStroke(weaponStroke);
+        else if (wpn.heavy())
+            g.setStroke(BasePanel.baseStroke(beamStroke*2+1));
+        else
+            g.setStroke(BasePanel.baseStroke(beamStroke*2));
+
+        if (options().newWeaponSound())
+        	 playAudioClip(newSoundEffect()); // BR:
+        else if (attacksPerRound > 1)
+            playAudioClip(soundEffectMulti());
+        else
+            playAudioClip(soundEffect());
+       
+        int sourceSize = 3;
+        if (source.design() != null)
+        	sourceSize = source.design().size();
+
+        // = = = = = Shield Initialization = = = = =
+        //
+       	shieldEffects.setWeapons(attacksPerRound, dmg, force, beamColor);
+
+       	BufferedImageList[] shieldImages = new BufferedImageList[attacksPerRound];
+//       	Point2D[] shieldImpacts = new Point2D[attacksPerRound];
+       	float[]   veiledRatios  = new float[attacksPerRound];
+       	
+//       	BufferedImage[][] shieldImg = new BufferedImage[attacksPerRound][];
+       	
+        // BR: Add Shield effect building
+//        Dimension shieldSize = target.shieldSize(boxW, boxH);
+//        float[][] shieldImpact = new float[attacksPerRound][];
+        // impact X, Y ; impact to impact adj X, Y; impact to center X, Y; veiled Span, Ratio
+//        final int veiledSpanId  = 6;
+//        final int veiledRatioId = 7;
+
+
+        // Full Beam trajectory generation
+        //
+        ArrayList<Line2D.Double> lines = new ArrayList<>();
+        for(int i = 0; i < attacksPerRound; ++i) {
+            int xAdj = scaled(roll(-4,4)*2);
+            int yAdj = scaled(roll(-4,4)*2);
+            shieldImages[i] = shieldEffects.getShields(xAdj, yAdj);
+            veiledRatios[i] = shieldEffects.getVeiledRatio();
+//        	shieldImpact[i] = target.shieldImpact(shieldSize, x0, y0, x1, y1, xAdj, yAdj);
+//        	shieldImg[i] = target.shieldImages(windUpFrames, holdFrames, closeFrames, attacksPerRound,
+//        			shieldSize, x0, y0, x1, y1, xAdj, yAdj, beamColor, force, dmg, shieldImpact[i]);
+            if (weaponSpread > 1) {
+                int xMod = (source.y == target.y) ? 0 : 1;
+                int yMod = (source.x == target.x) ? 0 : 1;
+                if ((source.x < target.x) && (source.y < target.y))
+                    xMod = -1;
+                else if ((source.x > target.x) && (source.y > target.y))
+                    xMod = -1;
+                for (int n = -1 * weaponSpread; n <= weaponSpread; n++) {
+                    if (!source.mgr.showAnimations()) 
+                        break;
+                    int adj = scaled(n);
+                    lines.addAll(addMultiLines(sourceSize, wpnCount, srcX, srcY, tarX+xAdj+(xMod*adj), tarY+yAdj+(yMod*adj)));
+                }
+            } else {
+                lines.addAll(addMultiLines(sourceSize, wpnCount, srcX, srcY, tarX+xAdj, tarY+yAdj));
+            }
+        }
+        
+        // Beam to the Impact Progression  Rendering
+        //
+        SortedMap<Integer, ArrayList<Line2D.Double>> partLines = new TreeMap<>();
+        SortedMap<Integer, ArrayList<Line2D.Double>> veilLines = new TreeMap<>();
+        long  sleepTime = 500; // Original = 50;
+        float veilAlpha = 0.3f; // TODO BR: veilAlpha
+        AlphaComposite veiledComposite = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, veilAlpha);
+        int fullViewFrames  = windUpFrames-1;
+        int shieldViewFrame = fullViewFrames-1;
+		int numLines = lines.size()/attacksPerRound;
+        for(int i = 0; i < fullViewFrames; ++i) {
+            ArrayList<Line2D.Double> pl = new ArrayList<>();
+            int attack = 0;
+            int lineId = 0;
+            for(Line2D.Double line : lines) {
+//            	double veiledRatio = shieldImpact[attack][veiledRatioId];
+            	double veiledRatio = veiledRatios[attack];
+        		double factor = (1.0-veiledRatio)/(windUpFrames-1);
+
+        		double newX1 = line.getX1() + (line.getX2() - line.getX1()) * i * factor;
+                double newY1 = line.getY1() + (line.getY2() - line.getY1()) * i * factor;
+                double newX2 = line.getX1() + (line.getX2() - line.getX1()) * (i + 1) * factor;
+                double newY2 = line.getY1() + (line.getY2() - line.getY1()) * (i + 1) * factor;
+                pl.add(new Line2D.Double(newX1, newY1, newX2, newY2));
+                lineId++;
+                if (lineId==numLines) {
+                	lineId = 0;
+                	attack++;
+                }
+            }
+            partLines.put(i, pl);
+           	paintLines(pl, g);
+           	if (i == shieldViewFrame) {
+           		// TODO BR: ==== First Shield View
+           	}
+            sleep(sleepTime);
+        }
+        // Veiled beam part
+        ArrayList<Line2D.Double> vl = new ArrayList<>();
+        int attack = 0;
+        int lineId = 0;
+        for(Line2D.Double line : lines) {
+//        	double veiledRatio = shieldImpact[attack][veiledRatioId];
+        	double veiledRatio = veiledRatios[attack];
+            double newX1 = line.getX2() - (line.getX2() - line.getX1()) * veiledRatio;
+            double newY1 = line.getY2() - (line.getY2() - line.getY1()) * veiledRatio;
+            double newX2 = line.getX2();
+            double newY2 = line.getY2();
+            vl.add(new Line2D.Double(newX1, newY1, newX2, newY2));
+            lineId++;
+            if (lineId==numLines) {
+            	lineId = 0;
+            	attack++;
+            }
+        }
+        veilLines.put(0, vl);
+    	g.setComposite(veiledComposite);
+       	paintLines(vl, g);
+        g.setComposite(AlphaComposite.Src);
+   		// TODO BR:  ==== Second Shield View
+        sleep(sleepTime);
+    	
+//    	} else { // Standard
+//	       for(int i = 0; i < windUpFrames; ++i) {
+//                ArrayList<Line2D.Double> pl = new ArrayList<>();
+//                for(Line2D.Double line : lines) {
+//                    double newX1 = line.getX1() + (line.getX2() - line.getX1()) * i / windUpFrames;
+//                    double newY1 = line.getY1() + (line.getY2() - line.getY1()) * i / windUpFrames;
+//                    double newX2 = line.getX1() + (line.getX2() - line.getX1()) * (i + 1) / windUpFrames;
+//                    double newY2 = line.getY1() + (line.getY2() - line.getY1()) * (i + 1) / windUpFrames;
+//                    pl.add(new Line2D.Double(newX1, newY1, newX2, newY2));
+//                }
+//                partLines.put(i, pl);
+//               	paintLines(pl, g);
+//                sleep(sleepTime);
+//                //ui.paintAllImmediately();
+//	        }
+//    	}
+
+    	// Beam Holding  Rendering
+        //
+        for(int i = 0; i < holdFrames; i++) {
+            if(beamColor2 != null) {
+                GradientPaint gp = new GradientPaint(srcX+i*scaled(10),srcY+i*scaled(10), beamColor,
+                		srcX+i*scaled(10)+(tarX-srcX)/distFactor,srcY+i*scaled(10)+(tarY-srcY)/distFactor, beamColor2, true);
+                g.setPaint(gp);
+            }
+            if(cycleColor != null) {
+                if(i%2 == 0) {
+                    g.setColor(cycleColor);
+                } else if (cycleColor2 != null && i%3 == 0) {
+                    g.setColor(cycleColor2);
+                } else {
+                    g.setColor(beamColor);
+                }
+            }
+            paintLines(partLines, g);
+            sleep(sleepTime);
+        }
+
+        // Beam collapse Rendering
+        //
+        for(int i = 0; i < windUpFrames-1; ++i) {
+            ui.paintCellsImmediately(source.x, target.x, source.y, target.y);
+            partLines.get(i).clear();
+            paintLines(partLines, g);
+        	g.setComposite(veiledComposite);
+           	paintLines(veilLines, g);
+            g.setComposite(AlphaComposite.Src);
+
+            // TODO BR: Shield
+	    	g.setComposite(AlphaComposite.SrcOver);
+        	for(int k = 0; k < attacksPerRound; k++) {
+        		g.drawImage(shieldImages[k].remove(0), shieldX, shieldY, null);
+        	}
+	    	g.setComposite(AlphaComposite.Src);
+
+            
+//            paintShields(shieldImg, 0, i, xS, yS, g);
+//            if (showShield) {
+//    	    	//g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
+//    	    	g.setComposite(AlphaComposite.SrcOver);
+//            	for(int k = 0; k < attacksPerRound; k++) {
+//            		g.drawImage(shieldImg[k][i], xS, yS, null);
+//            	}
+//    	    	g.setComposite(AlphaComposite.Src);
+//            }
+            sleep(sleepTime);
+        }
+    	g.setComposite(veiledComposite);
+      	paintLines(veilLines, g);
+        g.setComposite(AlphaComposite.Src);
+        
+        
+        
+//        } else {
+//	        for(int i = 0; i < windUpFrames; ++i) {
+//	            ui.paintCellsImmediately(source.x, target.x, source.y, target.y);
+//	            partLines.get(i).clear();
+//	            paintLines(partLines, g);
+//	            sleep(sleepTime);
+//	        }
+//        }
+        // Shield closing Rendering
+        //
+        
+        ui.paintAllImmediately();
+
+        String missLabel = dmg < 0 ? text("SHIP_COMBAT_DEFLECTED") : text("SHIP_COMBAT_MISS");
+        target.drawAttackResult(g,tarX,tarY,srcX, dmg,missLabel);   
+        g.setStroke(prev);
+        ui.paintAllImmediately();
     }
 }

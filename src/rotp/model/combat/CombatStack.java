@@ -38,6 +38,7 @@ import rotp.model.tech.TechStasisField;
 import rotp.ui.BasePanel;
 import rotp.ui.combat.ShipBattleUI;
 import rotp.util.Base;
+import rotp.util.BufferedImageList;
 
 public class CombatStack implements Base {
     static final Color shipCountTextC = new Color(255,240,78);
@@ -806,8 +807,9 @@ public class CombatStack implements Base {
         else
         	return empire.color();
     }
-    public BufferedImage[] shieldImg(int nI, int nA, Dimension size, int srcX, int srcY, int tarX, int tarY,
-    		int xAdj, int yAdj, Color beamColor, float beamForce, float damage) { // TODO BR: BufferedImage[] shieldImg(
+    public BufferedImage[] shieldImg(int nWindUpF, int nHoldF, int nCloseF, int nAttacks,
+    		Dimension size, int srcX, int srcY, int tarX, int tarY, int xAdj, int yAdj,
+    		Color beamColor, float beamForce, float damage) { // TODO BR: BufferedImage[] shieldImg(
 
     	// Impact Radius is function of beam power (^)
     	// Impact Transparency is function of beam absorption ratio (v)
@@ -828,8 +830,10 @@ public class CombatStack implements Base {
         final float spreadingRmax  = 0.95f - spreadDrEnd;
     	final float fSh    = 2.0f;	// To estimate the shield impact position
 
-    	BufferedImage[] shieldArr = new BufferedImage[nI];
-    	if (nI == 0)
+//    	int nFrame = 1 + nHoldF + nWindUpF + nCloseF;
+//    	BufferedImage[] shieldArr = new BufferedImage[nFrame];
+    	BufferedImage[] shieldArr = new BufferedImage[nWindUpF];
+    	if (nWindUpF == 0)
     		return shieldArr;
     	
         float shieldForce = maxShield / topShield;
@@ -848,8 +852,8 @@ public class CombatStack implements Base {
         float impactRay = bounds(impactRmin, impactRbase*beamPowerFactor, impactRmax);
         float spreadingRayMin = impactRay + spreadDrMin;
         float spreadRay =  spreadingRayMin + spreadingFactor * (spreadingRmax-spreadingRayMin);
-        impactRay /= nI;
-        spreadRay /= nI;
+        impactRay /= nWindUpF;
+        spreadRay /= nWindUpF;
         float alphaEnd = min(1f, alphaSpread/alphaEndDiv);
     	// Colors
         Color noColor =  new Color(0f,0f,0f,0f);
@@ -886,7 +890,7 @@ public class CombatStack implements Base {
         Ellipse2D shieldArea = new Ellipse2D.Double(0, 0, shieldW, shieldW);
     	BufferedImage baseImg = null;
     	RadialGradientPaint paint;
-        for (int i=0; i<nI; i++) {
+        for (int i=0; i<nWindUpF; i++) {
         	int k = i+1;
         	// New shield frame
         	float[] distances = {0.0f, k*impactRay, k*spreadRay, 1.0f};
@@ -913,7 +917,7 @@ public class CombatStack implements Base {
 	        baseImg = shieldArr[i];
         }
 	    // last frame goes around
-    	float[] distances = {0.0f, nI*impactRay, 1-5*spreadDrEnd, 1-spreadDrEnd, 0.999f, 1.0f};
+    	float[] distances = {0.0f, nWindUpF*impactRay, 1-5*spreadDrEnd, 1-spreadDrEnd, 0.999f, 1.0f};
         Color[] colors = {noColor, noColor, spreadEndColor, spreadColor, spreadEndColor, noColor};
 //        Color[] colors = {noColor, noColor, spreadColor, spreadEndColor, spreadEndColor, noColor};
 
@@ -928,11 +932,513 @@ public class CombatStack implements Base {
         // rescale circle to ellipse
         Image scaled = buffImg.getScaledInstance(shieldW, shieldH, Image.SCALE_SMOOTH);
         // Add image to animation
-        Graphics2D g2 = shieldArr[nI-1].createGraphics();
+        Graphics2D g2 = shieldArr[nWindUpF-1].createGraphics();
         g2.setComposite(AlphaComposite.SrcOver);
         g2.drawImage(scaled, 0, 0, null);
         g2.dispose();
         
         return shieldArr;
+    }
+    public float[] shieldImpact(Dimension size, int srcX, int srcY, int tarX, int tarY, int xAdj, int yAdj) {
+    	final float shieldDistanceFactor = 1.0f/3.0f /2;	// To estimate the shield impact position
+    	int shieldW = size.width;
+    	int shieldH = size.height;
+    	
+        // Impact on the ship positions
+    	int shipImpactX = tarX + xAdj; // Ship center + aiming error
+    	int shipImpactY = tarY + yAdj;
+    	
+    	// Beam trajectory
+    	int beamRayDX = srcX - shipImpactX;
+    	int beamRayDY = srcY - shipImpactY;
+    	
+    	// Normalized direction
+    	float beamSpan = (float) Math.sqrt((beamRayDX*beamRayDX) + (beamRayDY*beamRayDY));
+    	float normX = beamRayDX/beamSpan;
+    	float normY = beamRayDY/beamSpan;
+    	
+    	// Shield Impact offset to shipImpact
+       	float shieldAdjX = normX * shieldW * shieldDistanceFactor;
+       	float shieldAdjY = normY * shieldH * shieldDistanceFactor;
+       	
+       	// Impact on the shield
+       	float shieldImpactX = shipImpactX + shieldAdjX;
+       	float shieldImpactY = shipImpactY + shieldAdjY;
+       	
+       	// Shield Impact offset to ship center
+       	float shieldImpactDX = shieldImpactX - tarX;
+       	float shieldImpactDY = shieldImpactY - tarY;
+       	float veiledSpan  = distance(shieldImpactX, shieldImpactY, shipImpactX, shipImpactY);
+       	float veiledRatio = veiledSpan/beamSpan;
+
+//       	System.out.println("shieldImpactX: " + shieldImpactX);
+//       	System.out.println("shieldImpactY: " + shieldImpactY);
+//       	System.out.println("shieldImpactDX: " + shieldImpactDX);
+//       	System.out.println("shieldImpactDY: " + shieldImpactDY);
+//       	System.out.println("shieldAdjX: " + shieldAdjX);
+//       	System.out.println("shieldAdjY: " + shieldAdjY);
+//   		System.out.println("veiledSpan: " + veiledSpan);
+//   		System.out.println("veiledRatio: " + veiledRatio);
+       	
+       	return new float[] {
+    			shieldImpactX,  shieldImpactY,
+    			shieldImpactDX, shieldImpactDY,
+    			shieldAdjX,     shieldAdjY,
+    			veiledSpan,     veiledRatio};
+    }
+    public BufferedImage[] shieldImages(int nWindUpF, int nHoldF, int nCloseF, int nAttacks,
+    		Dimension size, int srcX, int srcY, int tarX, int tarY, int xAdj, int yAdj,
+    		Color beamColor, float beamForce, float damage, float[] shieldImpact) { // TODO BR: BufferedImage[] shieldImg(
+
+    	// Impact Radius is function of beam power (^)
+    	// Impact Transparency is function of beam absorption ratio (v)
+    	// Spreading Radius is function of beam power (^) and shield level (v)
+    	// Spreading Transparency is function of beam absorption ratio (v) and and shield level (v)
+
+    	final float topShield = 15f;
+    	final float alphaImpactMin = 0.5f;
+    	final float alphaImpactMax = 1.0f;
+    	final float alphaSpreadMin = 0.5f;
+    	final float alphaSpreadMax = 1.0f;
+    	final float alphaCloseMin  = 0.5f;
+    	final float alphaCloseMax  = 0.1f;
+    	final float alphaEndDiv    = 2.0f;
+        final float impactRbase    = 0.05f;
+        final float impactRmin     = 0.20f;
+        final float impactRmax     = 0.50f;
+        final float spreadDrEnd    = 0.05f;
+        final float spreadDrMin    = 0.2f;
+        final float spreadingRmax  = 0.95f - spreadDrEnd;
+        final float edgeRay        = 1.0f - spreadDrEnd;
+        final float edgeRay_       = edgeRay - spreadDrEnd;
+
+    	final float impactFadeFactor = 1.2f;
+    	final float impactAlphaRatio = 0.7f;
+    	final float spreadFadeFactor = 1.5f;
+
+        // Elliptic positions (as opposed to the circularized ones)
+//    	float shieldImpactX  = shieldImpact[0];  	
+//    	float shieldImpactY  = shieldImpact[1];  	
+       	float shieldImpactDX = shieldImpact[2];
+       	float shieldImpactDY = shieldImpact[3];
+    	int shieldW = size.width;
+    	int shieldH = size.height;
+
+    	
+    	
+//    	int nFrame = 1 + nHoldF + nWindUpF + nCloseF;
+    	int nFrame = nWindUpF;
+    	BufferedImage[] shieldArr = new BufferedImage[nFrame]; // TODO BR: shieldArr
+    	
+        float shieldForce = maxShield / topShield;
+        float beamPowerFactor = 0;
+        float absorptionRatio = 0;       
+        if (beamForce > 0) {
+        	beamPowerFactor = (float) Math.log10(beamForce);
+            absorptionRatio = damage>0? 1 - (damage/beamForce):1;
+        }
+        // Transparencies: Transparent = 0; Opaque = 1
+        float spreadingFactor = bounds(0, sqrt(beamPowerFactor * absorptionRatio), 1);
+        float alphaImpact = alphaImpactMin + absorptionRatio * (alphaImpactMax-alphaImpactMin);
+        float alphaSpread = alphaSpreadMin + spreadingFactor * (alphaSpreadMax-alphaSpreadMin);
+        // Rays
+        spreadingFactor = bounds(0, sqrt(shieldForce * absorptionRatio), 1);
+        float impactRay = bounds(impactRmin, impactRbase*beamPowerFactor, impactRmax);
+        float spreadingRayMin = impactRay + spreadDrMin;
+        float spreadRay =  spreadingRayMin + spreadingFactor * (spreadingRmax-spreadingRayMin);
+        impactRay /= nWindUpF;
+        spreadRay /= nWindUpF;
+        float alphaEnd = min(1f, alphaSpread/alphaEndDiv);
+    	// Colors
+        Color noColor =  new Color(0f,0f,0f,0f);
+        // Impact color based on BeamWeapon
+        Color impactColorStart = saturateColor(beamColor, alphaImpact);
+        Color impactColorEdge  = setAlpha(impactColorStart, alphaImpact*impactAlphaRatio);
+    	// Spread color based on Target color
+        Color spreadColor = saturateColor(shieldBaseColor(), alphaSpread);
+        Color spreadEndColor = setAlpha(spreadColor, alphaEnd);
+        
+    	
+
+    	// Normalization to the width to generate a circle shield:
+    	// Circle positions
+    	float ellipseRatio = (float)shieldW / shieldH;
+    	float ray      = shieldW/2.0f;
+    	float centerX  = ray;
+    	float centerY  = ray;
+    	float focusX   = centerX + shieldImpactDX;    	
+    	float focusY   = centerY + (shieldImpactDY)*ellipseRatio;
+        Point2D center = new Point2D.Float(centerX, centerY);
+        Point2D focus  = new Point2D.Float(focusX, focusY);
+
+
+        Ellipse2D shieldArea = new Ellipse2D.Double(0, 0, shieldW, shieldW);
+//        BufferedImage baseImg = null;
+    	RadialGradientPaint paint;
+    	float slideF = 0.0f/nWindUpF;
+        for (int i=0; i<nWindUpF; i++) {
+        	int k = i+1;
+//        	float r1 = k * impactRay;
+//        	float r2 = k * spreadRay;
+//        	float[] distances = {0.0f,          r1,               r2,          1.0f};
+//	        Color[] colors = {impactColorStart, impactColorStart, spreadColor, noColor};
+//	        System.out.println("distances = " + distances);
+
+//	        paint = new RadialGradientPaint(center, shieldW/2, focus, distances, colors, NO_CYCLE);
+//	    	BufferedImage buffImg = new BufferedImage(shieldW, shieldW, TYPE_INT_ARGB);
+//	        Graphics2D g = (Graphics2D) buffImg.getGraphics();
+//	        g.setComposite(AlphaComposite.SrcOver);
+//	        g.setPaint(paint);
+//	        g.fill(shieldArea);
+//	        g.dispose();
+        	// New shield frame
+        	// Impact
+//        	r2i = r1i * impactFadeFactor;
+//	        colors    = new Color[]{impactColorStart, impactColorEdge, noColor, noColor};
+        	float r1 = k * impactRay;
+        	float r2 = k * spreadRay;
+	        float[] distances = new float[]{0.0f,             r1,               r2,      1.0f};
+	        Color[] colors    = new Color[]{impactColorStart, impactColorStart, noColor, noColor};
+	        paint = new RadialGradientPaint(center, ray, focus, distances, colors, NO_CYCLE);
+//System.out.println("distances = " + distances);
+	    	BufferedImage impactImg = new BufferedImage(shieldW, shieldW, TYPE_INT_ARGB);
+	    	Graphics2D g = (Graphics2D) impactImg.getGraphics();
+	        g.setComposite(AlphaComposite.SrcOver);
+	        g.setPaint(paint);
+	        g.fill(shieldArea);
+	        g.dispose();
+	        // Spreading
+	        float dr = (r2-r1) * (0.49f-slideF);
+        	float r3 = r1 + dr;
+        	float r4 = r2 - dr;
+//        	if (r4 < 1f) {
+	        	distances = new float[]{0.0f,    r1,      r3,          r4,          r2,      1.0f};
+	        	colors    = new Color[]{noColor, noColor, spreadColor, spreadColor, noColor, noColor};
+//        	} else if (r3 < 1f) {
+//           		r2 = min(r2, edgeRay_);
+//           		r3 = min(r3, edgeRay_);
+//	        	distances = new float[]{0.0f,    r2,      r3,          edgeRay ,    1.0f,           1.0f};
+//	        	colors    = new Color[]{noColor, noColor, spreadColor, spreadColor, spreadEndColor, noColor};        		
+//        	} else {
+//        		r2 = min(r2, edgeRay_);
+//	        	distances = new float[]{0.0f,    r2,      edgeRay ,       1.0f,           1.0f};
+//	        	colors    = new Color[]{noColor, noColor, spreadEndColor, spreadEndColor, noColor};        		
+//        	}
+//System.out.println("distances Shield = " + distances);
+			paint = new RadialGradientPaint(center, ray, focus, distances, colors, NO_CYCLE);
+	    	BufferedImage ShieldImg = new BufferedImage(shieldW, shieldW, TYPE_INT_ARGB);
+	        g = (Graphics2D) ShieldImg.getGraphics();
+	        g.setComposite(AlphaComposite.SrcOver);
+	        g.setPaint(paint);
+	        g.fill(shieldArea);
+	        g.dispose();
+//System.out.println("RAYS = " + (int)(100*r1) + " / " + (int)(100*r3) + " / " + (int)(100*r4) + " / " + (int)(100*r2));
+	        
+	        // rescale circle to ellipse
+	        // Add image to animation
+	        shieldArr[i]  = new BufferedImage(shieldW, shieldH, TYPE_INT_ARGB);
+	        g = shieldArr[i].createGraphics();
+	        g.setComposite(AlphaComposite.SrcOver);
+//	        if (baseImg != null)
+//	        	g.drawImage(baseImg, 0, 0, null);
+	        g.drawImage(impactImg.getScaledInstance(shieldW, shieldH, Image.SCALE_SMOOTH), 0, 0, null);
+	        g.drawImage(ShieldImg.getScaledInstance(shieldW, shieldH, Image.SCALE_SMOOTH), 0, 0, null);
+	        g.dispose();
+//	        baseImg = shieldArr[i];
+        }
+//	    // last frame goes around
+//    	float[] distances = {0.0f, nWindUpF*impactRay, 1-5*spreadDrEnd, 1-spreadDrEnd, 0.999f,         1.0f};
+//        Color[] colors = {noColor, noColor,            spreadEndColor,  spreadColor,   spreadEndColor, noColor};
+////        Color[] colors = {noColor, noColor, spreadColor, spreadEndColor, spreadEndColor, noColor};
+//
+//        paint = new RadialGradientPaint(center, ray, focus, distances, colors, NO_CYCLE);
+//    	BufferedImage buffImg = new BufferedImage(shieldW, shieldW, TYPE_INT_ARGB);
+//        Graphics2D g = (Graphics2D) buffImg.getGraphics();
+//        g.setComposite(AlphaComposite.SrcOver);
+//        g.setPaint(paint);
+//        g.fill(shieldArea);
+//        g.dispose();
+//        
+//        // rescale circle to ellipse
+//        Image scaled = buffImg.getScaledInstance(shieldW, shieldH, Image.SCALE_SMOOTH);
+//        // Add image to animation
+//        Graphics2D g2 = shieldArr[nWindUpF-1].createGraphics();
+//        g2.setComposite(AlphaComposite.SrcOver);
+//        g2.drawImage(scaled, 0, 0, null);
+//        g2.dispose();
+        
+        return shieldArr;
+    }
+    // = = = = = = = = = = = Nested Class ShieldEffect = = = = = = = = = =
+    //
+    
+    public class ShieldEffects {
+    
+    	// Impact Radius is function of beam power (^)
+    	// Impact Transparency is function of beam absorption ratio (v)
+    	// Spreading Radius is function of beam power (^) and shield level (v)
+    	// Spreading Transparency is function of beam absorption ratio (v) and and shield level (v)
+
+    	private static final float topShieldLevel = 15f;
+    	private static final float alphaImpactMin = 0.5f;
+    	private static final float alphaImpactMax = 1.0f;
+    	private static final float alphaSpreadMin = 0.5f;
+    	private static final float alphaSpreadMax = 1.0f;
+    	private static final float alphaCloseMin  = 0.5f;
+    	private static final float alphaCloseMax  = 0.1f;
+    	private static final float alphaEndDiv    = 2.0f;
+
+    	private static final float rayImpactBase    = 0.05f;
+    	private static final float rayImpactMin     = 0.20f;
+    	private static final float rayImpactMax     = 0.50f;
+    	private static final float rayEvSpreadEnd   = 0.05f;
+    	private static final float rayEvSpreadMin   = 0.2f;
+    	private static final float raySpreadingMax  = 0.95f - rayEvSpreadEnd;
+    	private static final float rayEdgeEffect    = 1.0f - rayEvSpreadEnd;
+    	private static final float rayEdgeEffectB   = rayEdgeEffect - rayEvSpreadEnd;
+
+    	private static final float impactFadeFactor = 1.2f;
+    	private static final float impactAlphaRatio = 0.3f;
+    	private static final float spreadFadeFactor = 1.5f;
+
+    	private static final float shieldDistanceFactor = 1.0f/3.0f /2;	// To estimate the shield impact position
+
+    	private int windUpFramesNum, holdFramesNum, fadingFramesNum, framesNum;
+
+//    	private Dimension shieldSize;
+//    	private Rectangle sourceBox, targetBox;
+    	private int   width,   height;
+    	private int   sourceX, sourceY;
+    	private int   targetX, targetY;
+    	private float ray, ellipseRatio;
+//    	private float aimingX, aimingY;
+//    	private float shipImpactX,  shipImpactY;
+//    	private float beamRaySpanX, beamRaySpanY;
+//    	private float damage, beamForce;
+//    	private int   attacksPerRound;
+//    	private Color beamColor;
+    	private int shieldX, shieldY; 
+
+    	private float rayIo,   rayIm,   rayIe;
+    	private float rayIoEv, rayImEv, rayIeEv;
+    	private float raySb,   raySo,   raySm,   raySe;
+    	private float raySbEv, raySoEv, raySmEv, raySeEv;
+    	private float spreadRay;
+    	private float veiledRatio;
+    	private Color noCol, colIo, colIm, colSo, spreadEndColor;
+//    	private BufferedImage[] shieldImages;
+    	private Ellipse2D shieldArea;
+    	
+    	// = = = = = = = = = = Constructor = = = = = = = = = =
+    	//
+    	// None
+    	
+    	// = = = = = = = = = = Parameter setter = = = = = = = = = =
+    	//
+    	public void setFramesNum (int windUpFrames, int holdFrames, int fadingFrames) {
+    		windUpFramesNum = windUpFrames;
+    		holdFramesNum   = holdFrames;
+    		fadingFramesNum = fadingFrames;
+    		framesNum = 1+ 2*windUpFramesNum + holdFramesNum + fadingFramesNum;
+    	}
+    	public int[] setPositions(Rectangle sourceBox, Rectangle targetBox, Point2D offset) {
+//    		this.sourceBox = sourceBox;
+//    		this.targetBox = targetBox;
+    		int boxWidth  = targetBox.width;
+    		int boxHeight = targetBox.height;
+    		Dimension shieldSize = shieldSize(boxWidth, boxHeight);
+    		width  = shieldSize.width;
+    		height = shieldSize.height;
+
+        	ray = width/2.0f;
+        	ellipseRatio = (float)width / height;
+    		sourceX = sourceBox.x > targetBox.x ? sourceBox.x+(boxWidth/3) : sourceBox.x+(boxWidth*2/3);
+    		sourceY = sourceBox.y + boxHeight/2;
+//    		targetX = (float) targetBox.getCenterX();
+//    		targetY = (float) targetBox.getCenterY();
+    		targetX = targetBox.x + (int)(offset.getX()*boxWidth);;
+    		targetY = targetBox.y + (int)(offset.getY()*boxHeight);
+            shieldArea = new Ellipse2D.Double(0, 0, width, width);
+
+            shieldX = (int) (targetX-ray);
+            shieldY = (int) (targetY-height/2);
+            return new int[] {
+            		sourceX, sourceY,
+            		targetX, targetY,
+            		shieldX, shieldY
+            		};
+        }
+    	public void setWeapons(int attacksPerRound, float damage, float beamForce, Color beamColor) {
+//    		this.attacksPerRound = attacksPerRound;
+//    		this.damage    = damage;
+//    		this.beamForce = beamForce;
+//    		this.beamColor = beamColor;
+            float shieldForce = maxShield / topShieldLevel;
+            float beamPowerFactor = 0;
+            float absorptionRatio = 0;       
+            if (beamForce > 0) {
+            	beamPowerFactor = (float) Math.log10(beamForce);
+                absorptionRatio = damage>0? 1 - (damage/beamForce):1;
+            }
+            // Transparencies: Transparent = 0; Opaque = 1
+            float alphaSpreadingFactor = bounds(0, sqrt(beamPowerFactor * absorptionRatio), 1);
+            float alphaImpact = alphaImpactMin + absorptionRatio * (alphaImpactMax-alphaImpactMin);
+            float alphaSpread = alphaSpreadMin + alphaSpreadingFactor * (alphaSpreadMax-alphaSpreadMin);
+
+            // Rays parameters
+            // Impact
+            float rayImpactMinAdj = max(rayImpactMin, (float)scaled(3)/width);
+            float rayImpactMaxAdj = min(rayImpactMax, 2*rayImpactMinAdj);
+            float raySpreadingFactor = bounds(0, sqrt(shieldForce * absorptionRatio), 1);
+            rayIo   = bounds(rayImpactMinAdj, rayImpactBase*beamPowerFactor, rayImpactMax);
+            rayIoEv = (1-rayImpactMax) / framesNum/4;
+            rayIm   = rayIo * 1.4f;
+            rayImEv = rayIoEv;
+            rayIe   = rayIm * 1.4f;
+            rayIeEv = rayImEv;
+
+            // Shield counter effect
+            float speedFactor = 1.1f;
+            raySb   = rayIo;
+            raySbEv = rayIoEv * speedFactor;
+            raySo   = rayIm;
+            raySoEv = rayIoEv * speedFactor;
+            raySm   = rayIe;
+            raySmEv = raySoEv * speedFactor;
+            raySe   = rayIm *1.4f;
+            raySeEv = raySmEv * speedFactor;
+            
+            float spreadingRayMin = rayIo + rayEvSpreadMin;
+            spreadRay =  spreadingRayMin + raySpreadingFactor * (raySpreadingMax-spreadingRayMin);
+            rayIo /= windUpFramesNum;
+            spreadRay /= windUpFramesNum;
+            float alphaEnd = min(1f, alphaSpread/alphaEndDiv);
+        	// Colors
+            noCol = new Color(0f,0f,0f,0f);
+            // Impact color based on BeamWeapon
+            colIo = saturateColor(beamColor, alphaImpact);
+            colIm = setAlpha(colIo, alphaImpact*impactAlphaRatio);
+        	// Spread color based on Target color
+            colSo    = saturateColor(shieldBaseColor(), alphaSpread);
+            spreadEndColor = setAlpha(colSo, alphaEnd);
+
+    	}
+    	// = = = = = = = = = = Parameter setter and Getter = = = = = = = = = =
+    	//    	
+    	public BufferedImageList getShields(float aimingErrorX, float aimingErrorY) {
+//        	int nFrame = 1 + nHoldF + nWindUpF + nCloseF;
+//        	int nFrame = windUpFramesNum;
+        	BufferedImageList shieldList = new BufferedImageList(); // TODO BR: shieldArr
+        	
+            // Elliptic positions (as opposed to the circularized ones)
+//    		float aimingX = random.nextFloat()*8-4;
+//    		float aimingY = random.nextFloat()*8-4;
+    		float shipImpactX = targetX + aimingErrorX;  // Ship center + aiming error
+    		float shipImpactY = targetY + aimingErrorY;
+    		float beamSpanX   = sourceX - shipImpactX;
+    		float beamSpanY   = sourceY - shipImpactY;
+
+    		// Normalized direction vector
+    		float beamSpan = (float) Math.sqrt((beamSpanX*beamSpanX) + (beamSpanY*beamSpanY));
+        	float normX = beamSpanX/beamSpan;
+        	float normY = beamSpanY/beamSpan;
+        	// Shield Impact offset to shipImpact
+           	float shieldAdjX = normX * width  * shieldDistanceFactor;
+           	float shieldAdjY = normY * height * shieldDistanceFactor;
+           	// Impact on the shield
+           	float shieldImpactX = shipImpactX + shieldAdjX;
+           	float shieldImpactY = shipImpactY + shieldAdjY;
+          	// Shield Impact offset to ship center
+           	float shieldImpactDX = shieldImpactX - targetX;
+           	float shieldImpactDY = shieldImpactY - targetY;
+           	float veiledSpan  = distance(shieldImpactX, shieldImpactY, shipImpactX, shipImpactY);
+           	veiledRatio = veiledSpan/beamSpan;
+
+        	// Normalization to the width to generate a circle shield:
+        	// Circle positions
+        	float focusX   = ray + shieldImpactDX;    	
+        	float focusY   = ray + (shieldImpactDY)*ellipseRatio;
+            Point2D center = new Point2D.Float(ray, ray);
+            Point2D focus  = new Point2D.Float(focusX, focusY);
+
+            // = = = On Impact 
+            
+//            BufferedImage baseImg = null;
+        	RadialGradientPaint paint;
+        	float slideF = 0.0f/windUpFramesNum;
+            float rIo = rayIo - rayIoEv;
+            float rIm = rayIm - rayImEv;
+            float rIe = rayIe - rayIeEv;
+            float rSb = raySb - raySbEv;
+            float rSo = raySo - raySoEv;
+            float rSm = raySm - raySmEv;
+            float rSe = raySe - raySeEv;
+
+            for (int i=0; i<framesNum; i++) {
+                rIo = min(1, rIo + rayIoEv);
+                rIm = min(1, rIm + rayImEv);
+                rIe = min(1, rIe + rayIeEv);
+                rSb = min(1, rSb + raySbEv);
+                rSo = min(1, rSo + raySoEv);
+                rSm = min(1, rSm + raySmEv);
+                rSe = min(1, rSe + raySeEv);
+    	        float[] distances = new float[]{0.0f,  rIo,   rIm,   rIe,   1.0f};
+    	        Color[] colors    = new Color[]{colIo, colIo, colIm, noCol, noCol};
+    	    	BufferedImage impactImg = new BufferedImage(width, width, TYPE_INT_ARGB);
+    	    	Graphics2D g = (Graphics2D) impactImg.getGraphics();
+    	        g.setComposite(AlphaComposite.Src);
+    	        paint = new RadialGradientPaint(center, ray, focus, distances, colors, NO_CYCLE);
+    	        g.setPaint(paint);
+    	        g.fill(shieldArea);
+    	        g.dispose();
+
+    	        // Spreading
+    	        distances = new float[]{0.0f,  rSb,   rSo,   rSm,   rSe,   1.0f};
+	        	colors    = new Color[]{noCol, noCol, colSo, colSo, noCol, noCol};
+    	    	BufferedImage ShieldImg = new BufferedImage(width, width, TYPE_INT_ARGB);
+    	        g = (Graphics2D) ShieldImg.getGraphics();
+    	        g.setComposite(AlphaComposite.Src);
+    			paint = new RadialGradientPaint(center, ray, focus, distances, colors, NO_CYCLE);
+    	        g.setPaint(paint);
+    	        g.fill(shieldArea);
+    	        g.dispose();
+    	        
+    	        // rescale circle to ellipse
+    	        // Add image to animation
+    	        BufferedImage shieldFrame  = new BufferedImage(width, height, TYPE_INT_ARGB);
+    	        g = shieldFrame.createGraphics();
+    	        g.setComposite(AlphaComposite.SrcOver);
+    	        g.drawImage(impactImg.getScaledInstance(width, height, Image.SCALE_SMOOTH), 0, 0, null);
+    	        g.drawImage(ShieldImg.getScaledInstance(width, height, Image.SCALE_SMOOTH), 0, 0, null);
+    	        g.dispose();
+    	        shieldList.add(shieldFrame);
+            }
+//    	    // last frame goes around
+//        	float[] distances = {0.0f, windUpFramesNum*impactRay, 1-5*spreadDrEnd, 1-spreadDrEnd, 0.999f,         1.0f};
+//            Color[] colors = {noColor, noColor,            spreadEndColor,  spreadColor,   spreadEndColor, noColor};
+////            Color[] colors = {noColor, noColor, spreadColor, spreadEndColor, spreadEndColor, noColor};
+    //
+//            paint = new RadialGradientPaint(center, ray, focus, distances, colors, NO_CYCLE);
+//        	BufferedImage buffImg = new BufferedImage(width, width, TYPE_INT_ARGB);
+//            Graphics2D g = (Graphics2D) buffImg.getGraphics();
+//            g.setComposite(AlphaComposite.SrcOver);
+//            g.setPaint(paint);
+//            g.fill(shieldArea);
+//            g.dispose();
+//            
+//            // rescale circle to ellipse
+//            Image scaled = buffImg.getScaledInstance(width, height, Image.SCALE_SMOOTH);
+//            // Add image to animation
+//            Graphics2D g2 = shieldArr[windUpFramesNum-1].createGraphics();
+//            g2.setComposite(AlphaComposite.SrcOver);
+//            g2.drawImage(scaled, 0, 0, null);
+//            g2.dispose();
+            
+            return shieldList;
+    	}
+    	// = = = = = = = = = = Parameter Getter = = = = = = = = = =
+    	//
+    	public float getVeiledRatio() { return veiledRatio; }
+
     }
 }
