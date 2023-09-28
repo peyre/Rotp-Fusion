@@ -39,6 +39,11 @@ Bug to fix:
 Very soon:
 - Improve responsivity of other options panels
 - Add shield fading...
+- Monsters:
+  - Give loots.
+  - Option to change their travel time.
+  - Option to start late game
+    - Associated with specific tech discovery.
 - Character panel: improve the reactivity.
 - Add second statistic option: (on the side of lin / log): Display statistic as:
     - "% Tot": Precentage relative to known total (!= Galaxy Total)
@@ -60,6 +65,9 @@ Later:
 
 
 ## What's New
+
+2023.09.27 (BR)
+- Fixed Manual about production formula
 
 2023.09.20 (BR)
 - Cleaned useless console log.
