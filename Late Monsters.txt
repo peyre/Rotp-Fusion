@@ -1,0 +1,43 @@
+Ok. I propose the following changes:
+
+Currently, the Random Events options are: On, No Monsters and Off.
+
+They become: On, No Monsters, Off and Only Monsters.
+
+The Guide for Only Monsters is:
+
+"Only Monsters: No random events, but Monsters (Space Amoeba, Space Crystal, and Space Pirates) can be triggered by relevant research."
+
+I propose that the relevant research should be:
+
+Propulsion/Hyper Drives for Space Pirates
+
+- When the research is completed, a GNN announcement says: "The Hyper Drive will change everything. For example, criminals rejoice at their new-found mobility."
+
+Planetology/Advanced Cloning for Space Amoeba
+
+- When the research is completed, a GNN announcement says: "The SCE (Society to Clone Everything) have successfully incarnated a trans-dimensional horror. When asked for comment, spokesmen said: AAAAAAAAHHHHHHHHH!! IT BURNS!"
+
+Propulsion/Intergalactic Star Gates for Space Crystal.
+
+- When the research is completed, a GNN announcement says: "Scientists responsible for the new Star Gate technology said: We gazed into the Abyss, and the Abyss roared Nom Nom Nom!"
+
+We should give the player some kind of warning in the Tech Descriptions. If we slightly change the Tech Descriptions, it should be OK, even if you are using one of the other Random Event options. So we change 3 tech descriptions:
+
+Propulsion/Hyper Drives:
+OLD: Moves ships at Warp XX, and allows a maximum maneuverability of class IX in combat.
+NEW: Moves ships at Warp XX, and allows a maximum maneuverability of class IX in combat. It is illegal to use a Hyper Drive in the commission of Theft, Pillage or Piracy.
+
+Planetology/Advanced Cloning:
+OLD: Allows bio-engineered colonists to be grown at a rate of 1M per 5 BC.
+NEW: Bio-engineered colonists are grown at a rate of 1M per 5 BC. The GrowInAtor is perfectly safe! Nothing can't go rong.
+
+Propulsion/Intergalactic Star Gates
+OLD: Allows your ships to move between any two planets equipped with star gates in only one turn. Cost 3000 BC to build.
+NEW: Ships can move between any two planets equipped with your star gates in only one turn. Traversing Inter-Dimensional space almost never awakes Elritch Abominations. Cost 3000 BC to build.
+
+
+================== Notes:
+Triggered Monster option: = Monster only - only!
+
+Tech alternate description by overiding detail()
