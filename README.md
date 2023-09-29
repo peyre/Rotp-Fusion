@@ -45,6 +45,7 @@ Very soon:
   - Option to start late game
     - Associated with specific tech discovery.
 - Character panel: improve the reactivity.
+- Spy: option to not over spend with the spy budget!
 - Add second statistic option: (on the side of lin / log): Display statistic as:
     - "% Tot": Precentage relative to known total (!= Galaxy Total)
     - "% Player": Percentage relative to player value.
