@@ -67,6 +67,9 @@ Later:
 
 ## What's New
 
+2023.09.29 (BR)
+- Fixed some display options not always being saved.
+
 2023.09.27 (BR)
 - Fixed Manual about production formula
 
@@ -75,7 +78,7 @@ Later:
 - Fixed disconnected "Deterministic Artifact"-option.
 
 2023.09.18 (BR)
-- Moved Options Setup Panels backImage control to BaseModPanel. 
+- Moved Options Setup Panels backImage control to BaseModPanel.
 - Custom Species Menu Buttons display optimization...
   - Still a lot of text optimization to-do
 
